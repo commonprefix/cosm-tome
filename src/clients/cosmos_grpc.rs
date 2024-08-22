@@ -127,7 +127,7 @@ impl CosmosClient for CosmosgRPC {
 
         let mut tx_res = self.get_tx(&txhash).await?;
         let mut retries = 0;
-        while tx_res.res.code.is_err() && retries < 2 {
+        while tx_res.res.code.is_err() && retries < 10 {
             retries += 1;
             tx_res = self.get_tx(&txhash).await?;
         }
