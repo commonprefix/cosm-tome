@@ -130,6 +130,7 @@ impl CosmosClient for CosmosgRPC {
         while tx_res.res.code.is_err() && retries < 10 {
             retries += 1;
             tx_res = self.get_tx(&txhash).await?;
+            println!("Retrying tx broadcast: {:?}", tx_res);
         }
 
         if tx_res.res.code.is_err() {
