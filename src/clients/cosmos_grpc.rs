@@ -125,6 +125,7 @@ impl CosmosClient for CosmosgRPC {
                 })
             }
         };
+        println!("Broadcasted tx: {:?}", txhash);
         let mut tx_res = self.get_tx(&txhash).await?;
         let mut retries = 0;
         while tx_res.res.code.is_err() && retries < 10 {
