@@ -5,10 +5,11 @@ use cosmrs::proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse};
 use cosmrs::proto::traits::Message;
 use cosmrs::rpc::abci::transaction::Hash;
 use cosmrs::rpc::{Client, HttpClient};
+use tokio::time::{sleep, Instant};
 
 use crate::chain::error::ChainError;
 use crate::chain::fee::GasInfo;
-use crate::chain::response::{AsyncChainTxResponse, ChainTxResponse};
+use crate::chain::response::{AsyncChainTxResponse, ChainTxResponse, Code};
 use crate::modules::tx::model::{BroadcastMode, RawTx};
 
 use super::client::CosmosClient;
@@ -106,11 +107,30 @@ impl CosmosClient for TendermintRPC {
                 .into(),
         };
 
+        let txhash = res.tx_hash;
+        let start = Instant::now();
+        let mut tx_res = self.get_tx(&txhash).await;
+
+        while start.elapsed().as_secs() < 15 && tx_res.is_err() {
+            let error = tx_res.err().unwrap();
+            match error {
+                ChainError::CosmosSdk { res } => {
+                    if res.code != Code::from(tonic::Code::NotFound) {
+                        return Err(ChainError::CosmosSdk { res });
+                    }
+                }
+                _ => return Err(error),
+            }
+
+            sleep(tokio::time::Duration::from_secs(1)).await;
+            tx_res = self.get_tx(&txhash).await;
+        }
+
+        let res = tx_res?;
+
         if res.res.code.is_err() {
             return Err(ChainError::CosmosSdk { res: res.res });
         }
-
-        let res = self.get_tx(&res.tx_hash).await?;
 
         Ok(res)
     }
