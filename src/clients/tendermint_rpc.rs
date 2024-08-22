@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use cosmrs::proto::cosmos::tx::v1beta1::{SimulateRequest, SimulateResponse};
 use cosmrs::proto::traits::Message;
+use cosmrs::rpc::abci::transaction::Hash;
 use cosmrs::rpc::{Client, HttpClient};
 
 use crate::chain::error::ChainError;
@@ -125,6 +128,19 @@ impl CosmosClient for TendermintRPC {
             return Err(ChainError::CosmosSdk {
                 res: res.deliver_tx.into(),
             });
+        }
+
+        Ok(res.into())
+    }
+
+    async fn get_tx(&self, tx_hash: &String) -> Result<ChainTxResponse, ChainError> {
+        let res = self
+            .client
+            .tx(Hash::from_str(tx_hash.as_str())?, false)
+            .await?;
+
+        if res.tx_result.code.is_err() {
+            return Err(ChainError::CosmosSdk { res: res.into() });
         }
 
         Ok(res.into())

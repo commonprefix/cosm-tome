@@ -36,6 +36,8 @@ pub trait CosmosClient {
     /// Cosm-tome will continue to support it by broadcasting with the Sync mode
     /// and then polling the GetTransaction endpoint until it has been committed in the block.
     async fn broadcast_tx_block(&self, tx: &RawTx) -> Result<ChainTxResponse, ChainError>;
+
+    async fn get_tx(&self, tx_hash: &String) -> Result<ChainTxResponse, ChainError>;
 }
 
 #[derive(Clone, Debug)]

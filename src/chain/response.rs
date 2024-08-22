@@ -1,7 +1,3 @@
-use cosmrs::proto::{
-    cosmos::base::abci::v1beta1::TxResponse as CosmosResponse,
-    tendermint::abci::{Event as ProtoEvent, EventAttribute},
-};
 use cosmrs::rpc::abci::{
     tag::{Key, Tag as TendermintProtoTag, Value},
     Code as TendermintCode, Event as TendermintEvent,
@@ -11,6 +7,13 @@ use cosmrs::rpc::endpoint::{
     broadcast::tx_async::Response as AsyncTendermintResponse,
     broadcast::tx_commit::{Response as BlockingTendermintResponse, TxResult},
     broadcast::tx_sync::Response as SyncTendermintResponse,
+};
+use cosmrs::{
+    proto::{
+        cosmos::base::abci::v1beta1::TxResponse as CosmosResponse,
+        tendermint::abci::{Event as ProtoEvent, EventAttribute},
+    },
+    rpc::endpoint::tx::Response as TxResponse,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -63,6 +66,16 @@ impl From<tonic::Status> for ChainResponse {
             code: res.code().into(),
             data: Some(res.details().into()),
             log: res.message().into(),
+        }
+    }
+}
+
+impl From<TxResponse> for ChainResponse {
+    fn from(res: TxResponse) -> ChainResponse {
+        ChainResponse {
+            code: res.tx_result.code.into(),
+            data: Some(res.tx_result.data.into()),
+            log: res.tx_result.log.to_string(),
         }
     }
 }
@@ -164,6 +177,19 @@ impl From<BlockingTendermintResponse> for ChainTxResponse {
             events: res.deliver_tx.events.into_iter().map(Into::into).collect(),
             gas_used: res.deliver_tx.gas_used.into(),
             gas_wanted: res.deliver_tx.gas_wanted.into(),
+            tx_hash: res.hash.to_string(),
+            height: res.height.into(),
+        }
+    }
+}
+
+impl From<TxResponse> for ChainTxResponse {
+    fn from(res: TxResponse) -> Self {
+        ChainTxResponse {
+            res: ChainResponse::from(res.clone()),
+            events: res.tx_result.events.into_iter().map(Into::into).collect(),
+            gas_used: res.tx_result.gas_used.into(),
+            gas_wanted: res.tx_result.gas_wanted.into(),
             tx_hash: res.hash.to_string(),
             height: res.height.into(),
         }

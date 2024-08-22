@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use cosmrs::proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use cosmrs::proto::cosmos::tx::v1beta1::{
-    BroadcastMode as ProtoBroadcastMode, BroadcastTxRequest, SimulateRequest,
+    BroadcastMode as ProtoBroadcastMode, BroadcastTxRequest, GetTxRequest, SimulateRequest,
 };
 use tonic::codec::ProstCodec;
 
@@ -135,6 +135,28 @@ impl CosmosClient for CosmosgRPC {
 
         let res = client
             .broadcast_tx(req)
+            .await
+            .map_err(ChainError::tonic_status)?
+            .into_inner();
+
+        let res: ChainTxResponse = res.tx_response.unwrap().try_into()?;
+
+        if res.res.code.is_err() {
+            return Err(ChainError::CosmosSdk { res: res.res });
+        }
+
+        Ok(res)
+    }
+
+    async fn get_tx(&self, tx_hash: &String) -> Result<ChainTxResponse, ChainError> {
+        let mut client = ServiceClient::connect(self.grpc_endpoint.clone()).await?;
+
+        let req = GetTxRequest {
+            hash: tx_hash.clone(),
+        };
+
+        let res = client
+            .get_tx(req)
             .await
             .map_err(ChainError::tonic_status)?
             .into_inner();
