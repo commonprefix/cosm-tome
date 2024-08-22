@@ -2,6 +2,7 @@ use serde::Serialize;
 
 use crate::chain::request::TxOptions;
 use crate::clients::client::CosmTome;
+use crate::modules::tx::model::BroadcastMode;
 use cosmrs::proto::cosmwasm::wasm::v1::{
     QuerySmartContractStateRequest, QuerySmartContractStateResponse,
 };
@@ -158,7 +159,8 @@ impl<T: CosmosClient> CosmTome<T> {
             .tx_sign(msgs, Some(sender_addr), key, tx_options)
             .await?;
 
-        let res = self.tx_broadcast_block(&tx_raw).await?;
+        let async_res = self.tx_broadcast(&tx_raw, BroadcastMode::Sync).await?;
+        let res = self.tx_get(&async_res.tx_hash).await?;
 
         Ok(ExecResponse { res })
     }

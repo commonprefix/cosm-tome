@@ -131,4 +131,8 @@ impl<T: CosmosClient> CosmTome<T> {
     pub async fn tx_broadcast_block(&self, tx: &RawTx) -> Result<ChainTxResponse, TxError> {
         Ok(self.client.broadcast_tx_block(tx).await?)
     }
+
+    pub async fn tx_get(&self, tx_hash: &String) -> Result<ChainTxResponse, TxError> {
+        Ok(self.client.get_tx(tx_hash).await?)
+    }
 }
