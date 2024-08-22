@@ -60,6 +60,9 @@ pub enum ChainError {
     /// Cosmos gRPC client errors
     #[error(transparent)]
     GRPC(#[from] CosmosGRPCError),
+
+    #[error("invalid response: {error:?}")]
+    InvalidResponse { error: String },
 }
 
 impl ChainError {
