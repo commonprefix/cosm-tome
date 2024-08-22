@@ -129,7 +129,7 @@ impl CosmosClient for CosmosgRPC {
         let start = Instant::now();
         let mut tx_res = self.get_tx(&txhash).await;
 
-        while start.elapsed().as_secs() < 30 && tx_res.is_err() {
+        while start.elapsed().as_secs() < 15 && tx_res.is_err() {
             sleep(tokio::time::Duration::from_secs(1)).await;
             tx_res = self.get_tx(&txhash).await;
         }
