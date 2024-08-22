@@ -126,20 +126,22 @@ impl CosmosClient for CosmosgRPC {
             }
         };
         println!("Broadcasted tx: {:?}", txhash);
-        let mut tx_res = self.get_tx(&txhash).await?;
+        let mut tx_res = self.get_tx(&txhash).await;
         let mut retries = 0;
-        while tx_res.res.code.is_err() && retries < 10 {
+        while tx_res.is_err() && retries < 10 {
             retries += 1;
             sleep(tokio::time::Duration::from_secs(2)).await;
-            tx_res = self.get_tx(&txhash).await?;
+            tx_res = self.get_tx(&txhash).await;
             println!("Retrying tx broadcast: {:?}", tx_res);
         }
 
-        if tx_res.res.code.is_err() {
-            return Err(ChainError::CosmosSdk { res: tx_res.res });
+        let res = tx_res?;
+
+        if res.res.code.is_err() {
+            return Err(ChainError::CosmosSdk { res: res.res });
         }
 
-        Ok(tx_res)
+        Ok(res)
     }
 
     async fn broadcast_tx_block(&self, tx: &RawTx) -> Result<ChainTxResponse, ChainError> {
