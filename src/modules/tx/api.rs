@@ -6,7 +6,6 @@ use serde::Serialize;
 use crate::chain::coin::{Coin, Denom};
 use crate::chain::error::ChainError;
 use crate::chain::msg::Msg;
-use crate::chain::response::AsyncChainTxResponse;
 use crate::modules::auth::model::{Account, Address};
 use crate::{
     chain::{fee::Fee, request::TxOptions, response::ChainTxResponse, Any},
@@ -123,7 +122,7 @@ impl<T: CosmosClient> CosmTome<T> {
         &self,
         tx: &RawTx,
         mode: BroadcastMode,
-    ) -> Result<AsyncChainTxResponse, TxError> {
+    ) -> Result<ChainTxResponse, TxError> {
         Ok(self.client.broadcast_tx(tx, mode).await?)
     }
 

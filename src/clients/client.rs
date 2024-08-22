@@ -3,7 +3,7 @@ use cosmrs::proto::traits::Message;
 
 use crate::chain::error::ChainError;
 use crate::chain::fee::GasInfo;
-use crate::chain::response::{AsyncChainTxResponse, ChainTxResponse};
+use crate::chain::response::ChainTxResponse;
 use crate::config::cfg::ChainConfig;
 use crate::modules::tx::model::{BroadcastMode, RawTx};
 
@@ -30,7 +30,7 @@ pub trait CosmosClient {
         &self,
         tx: &RawTx,
         mode: BroadcastMode,
-    ) -> Result<AsyncChainTxResponse, ChainError>;
+    ) -> Result<ChainTxResponse, ChainError>;
 
     /// TODO: Block BroadcastMode support is being dropped from future Cosmos-Sdk versions.
     /// Cosm-tome will continue to support it by broadcasting with the Sync mode

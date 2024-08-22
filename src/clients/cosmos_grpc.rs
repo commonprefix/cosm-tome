@@ -8,7 +8,7 @@ use tonic::codec::ProstCodec;
 use cosmrs::proto::traits::Message;
 
 use crate::chain::fee::GasInfo;
-use crate::chain::response::{AsyncChainTxResponse, ChainResponse, Code};
+use crate::chain::response::{ChainResponse, Code};
 use crate::chain::{error::ChainError, response::ChainTxResponse};
 use crate::modules::tx::model::{BroadcastMode, RawTx};
 
@@ -102,7 +102,7 @@ impl CosmosClient for CosmosgRPC {
         &self,
         tx: &RawTx,
         mode: BroadcastMode,
-    ) -> Result<AsyncChainTxResponse, ChainError> {
+    ) -> Result<ChainTxResponse, ChainError> {
         let mut client = ServiceClient::connect(self.grpc_endpoint.clone()).await?;
 
         let req = BroadcastTxRequest {
@@ -116,13 +116,27 @@ impl CosmosClient for CosmosgRPC {
             .map_err(ChainError::tonic_status)?
             .into_inner();
 
-        let res: AsyncChainTxResponse = res.tx_response.unwrap().into();
+        let txhash = match res.tx_response {
+            Some(response) => response.txhash,
+            None => {
+                return Err(ChainError::InvalidResponse {
+                    error: "tx_response is missing".to_string(),
+                })
+            }
+        };
 
-        if res.res.code.is_err() {
-            return Err(ChainError::CosmosSdk { res: res.res });
+        let mut tx_res = self.get_tx(&txhash).await?;
+        let mut retries = 0;
+        while tx_res.res.code.is_err() && retries < 2 {
+            retries += 1;
+            tx_res = self.get_tx(&txhash).await?;
         }
 
-        Ok(res)
+        if tx_res.res.code.is_err() {
+            return Err(ChainError::CosmosSdk { res: tx_res.res });
+        }
+
+        Ok(tx_res)
     }
 
     async fn broadcast_tx_block(&self, tx: &RawTx) -> Result<ChainTxResponse, ChainError> {

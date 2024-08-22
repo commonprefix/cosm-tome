@@ -92,7 +92,7 @@ impl CosmosClient for TendermintRPC {
         &self,
         tx: &RawTx,
         mode: BroadcastMode,
-    ) -> Result<AsyncChainTxResponse, ChainError> {
+    ) -> Result<ChainTxResponse, ChainError> {
         let res: AsyncChainTxResponse = match mode {
             BroadcastMode::Sync => self
                 .client
@@ -109,6 +109,8 @@ impl CosmosClient for TendermintRPC {
         if res.res.code.is_err() {
             return Err(ChainError::CosmosSdk { res: res.res });
         }
+
+        let res = self.get_tx(&res.tx_hash).await?;
 
         Ok(res)
     }
