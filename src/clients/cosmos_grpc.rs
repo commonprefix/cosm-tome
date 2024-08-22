@@ -13,7 +13,7 @@ use crate::chain::{error::ChainError, response::ChainTxResponse};
 use crate::modules::tx::model::{BroadcastMode, RawTx};
 
 use super::client::CosmosClient;
-use tokio::time::sleep;
+use tokio::time::{sleep, Instant};
 
 #[derive(Clone, Debug)]
 pub struct CosmosgRPC {
@@ -125,14 +125,13 @@ impl CosmosClient for CosmosgRPC {
                 })
             }
         };
-        println!("Broadcasted tx: {:?}", txhash);
+
+        let start = Instant::now();
         let mut tx_res = self.get_tx(&txhash).await;
-        let mut retries = 0;
-        while tx_res.is_err() && retries < 10 {
-            retries += 1;
-            sleep(tokio::time::Duration::from_secs(2)).await;
+
+        while start.elapsed().as_secs() < 30 && tx_res.is_err() {
+            sleep(tokio::time::Duration::from_secs(1)).await;
             tx_res = self.get_tx(&txhash).await;
-            println!("Retrying tx broadcast: {:?}", tx_res);
         }
 
         let res = tx_res?;
