@@ -118,7 +118,14 @@ impl CosmosClient for CosmosgRPC {
             .into_inner();
 
         let txhash = match res.tx_response {
-            Some(response) => response.txhash,
+            Some(response) => {
+                if !response.raw_log.is_empty() {
+                    return Err(ChainError::InvalidResponse {
+                        error: response.raw_log,
+                    });
+                }
+                response.txhash
+            }
             None => {
                 return Err(ChainError::InvalidResponse {
                     error: "tx_response is missing".to_string(),
